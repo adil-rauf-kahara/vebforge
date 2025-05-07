@@ -1,0 +1,336 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+body {
+  font-family: var(--font-intertight);
+}
+
+.blue-gradient-text {
+  background: linear-gradient(to right, #fff, #7eb6ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.blue-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 149, 255, 0.15) 0%, rgba(0, 149, 255, 0) 70%);
+  z-index: 0;
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+.my-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, white 10%, white 0%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+
+.gradient-border {
+  position: relative;
+  border-radius: 0.75rem;
+  background: rgba(20, 20, 20, 0.5);
+  overflow: hidden;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to right, rgba(100, 180, 255, 0.2), rgba(100, 180, 255, 0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.floating-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #7eb6ff;
+  opacity: 0.8;
+}
+
+.code-window {
+  background-color: #0d1117;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-tabs {
+  display: flex;
+  background-color: #161b22;
+  padding: 8px 16px;
+  border-bottom: 1px solid #30363d;
+}
+
+.code-tab {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.code-tab.active {
+  background-color: #0d1117;
+}
+
+.code-content {
+  padding: 16px;
+  font-family: "Menlo", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e6edf3;
+}
+
+.code-line {
+  display: flex;
+}
+
+.line-number {
+  color: #6e7681;
+  text-align: right;
+  padding-right: 16px;
+  user-select: none;
+}
+
+.line-content {
+  flex: 1;
+}
+
+.token-tag {
+  color: #7ee787;
+}
+
+.token-attr {
+  color: #79c0ff;
+}
+
+.token-string {
+  color: #a5d6ff;
+}
+
+.token-comment {
+  color: #8b949e;
+}
+
+.chat-window {
+  background-color: #0d1117;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.chat-message {
+  display: flex;
+  margin-bottom: 16px;
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #161b22;
+  font-weight: bold;
+}
+
+.chat-content {
+  flex: 1;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.chat-name {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.chat-time {
+  color: #8b949e;
+  font-size: 12px;
+}
+
+.chat-text {
+  color: #e6edf3;
+}
+
+.chat-input {
+  display: flex;
+  margin-top: 16px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chat-input input {
+  flex: 1;
+  background-color: transparent;
+  border: none;
+  padding: 8px 12px;
+  color: #e6edf3;
+  outline: none;
+}
+
+.chat-input button {
+  background-color: #161b22;
+  border: none;
+  padding: 8px 12px;
+  color: #e6edf3;
+  cursor: pointer;
+}
+
+.image-generator {
+  background-color: #0d1117;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.image-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #161b22;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e6edf3;
+}
+
+.image-input {
+  display: flex;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.image-input input {
+  flex: 1;
+  background-color: transparent;
+  border: none;
+  padding: 8px 12px;
+  color: #e6edf3;
+}
+
+.image-input button {
+  background-color: #161b22;
+  border: none;
+  padding: 8px 12px;
+  color: #e6edf3;
+  cursor: pointer;
+}
+
+.stats-card {
+  background-color: rgba(13, 17, 23, 0.5);
+  border-radius: 8px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to right, rgba(100, 180, 255, 0.2), rgba(100, 180, 255, 0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.process-card {
+  background-color: rgba(13, 17, 23, 0.5);
+  border-radius: 8px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.process-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to right, rgba(100, 180, 255, 0.2), rgba(100, 180, 255, 0.05));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
