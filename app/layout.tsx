@@ -1,6 +1,7 @@
-import type React from "react";
 import "@/app/globals.css";
 import { Inter_Tight } from "next/font/google";
+import LicenseProvider from "@/contexts/LicenseContext";
+import { ThemeProvider } from "next-themes";
 
 const inter_tight = Inter_Tight({
   subsets: ["latin"],
@@ -13,7 +14,6 @@ export const metadata = {
   description: "VebForge is a sleek and modern Next.js template built for AI startups, chatbot agencies, and smart platform builders. Designed with Tailwind CSS and crafted for performance, it's the perfect starting point for AI-driven businesses.",
 };
 
-
 export default function RootLayout({
   children,
 }: {
@@ -21,7 +21,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="scroll-smooth">
-      <body className={`${inter_tight.className} antialiased`}>{children}</body>
+      <body className={`${inter_tight.className} antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="dark">
+          <LicenseProvider>{children}</LicenseProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
