@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { saveLicenseToLocalStorage } from '@/lib/licenseUtils';
+import React, { useState, useEffect } from 'react';
+import { saveLicenseToStorage } from '@/lib/licenseUtils';
 import { validateLicense } from '@/lib/licenseUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, Lock } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lock, Loader2 } from 'lucide-react';
 
 interface LicenseActivationProps {
   domain: string;
@@ -18,6 +18,35 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Check if license can be auto-activated from server file
+  useEffect(() => {
+    const checkServerLicense = async () => {
+      try {
+        const response = await fetch('/api/license/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain })
+        });
+        
+        const data = await response.json();
+        
+        if (data.isValid) {
+          setSuccess(true);
+          setTimeout(() => {
+            onActivated();
+          }, 500);
+        }
+      } catch (error) {
+        console.warn('Server license check failed:', error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    checkServerLicense();
+  }, [domain, onActivated]);
 
   const handleActivation = async () => {
     if (!license.trim()) {
@@ -32,7 +61,20 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
       const isValid = await validateLicense(license, domain);
 
       if (isValid) {
-        saveLicenseToLocalStorage(license, domain);
+        // Save license to both browser storage and server file
+        await saveLicenseToStorage(license, domain);
+        
+        // Also save to server file
+        try {
+          await fetch('/api/license/store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ license, domain })
+          });
+        } catch (e) {
+          console.warn('Server storage failed:', e);
+        }
+        
         setSuccess(true);
         
         // Delay to show success message
@@ -53,6 +95,18 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
   const redirectToVerification = () => {
     window.location.href = `https://license.vebtual.com/verify?domain=${encodeURIComponent(domain)}`;
   };
+
+  // Return null during initial loading to avoid flickering
+  if (initialLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50 p-4">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 text-white animate-spin" />
+          <p className="mt-4 text-white text-lg">Verifying license...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50 p-4">
@@ -108,7 +162,12 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
                 disabled={isVerifying || success || !license.trim()}
                 className="w-full"
               >
-                {isVerifying ? 'Verifying...' : 'Activate'}
+                {isVerifying ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>Verifying...</span>
+                  </div>
+                ) : 'Activate'}
               </Button>
             </div>
           </div>

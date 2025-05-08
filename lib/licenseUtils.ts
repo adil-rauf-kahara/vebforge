@@ -44,7 +44,7 @@ export const removeLicenseFromLocalStorage = (): void => {
 export const getCurrentDomain = (): string => {
   if (typeof window === 'undefined') return '';
   
-  // Extract just the hostname without protocol or paths
+  // Extract just the hostname without protocol, paths, or port
   return window.location.hostname;
 };
 
