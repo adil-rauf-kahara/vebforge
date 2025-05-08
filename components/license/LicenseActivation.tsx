@@ -18,35 +18,15 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [animateIn, setAnimateIn] = useState(false);
 
-  // Check if license can be auto-activated from server file
   useEffect(() => {
-    const checkServerLicense = async () => {
-      try {
-        const response = await fetch('/api/license/validate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domain })
-        });
-        
-        const data = await response.json();
-        
-        if (data.isValid) {
-          setSuccess(true);
-          setTimeout(() => {
-            onActivated();
-          }, 500);
-        }
-      } catch (error) {
-        console.warn('Server license check failed:', error);
-      } finally {
-        setInitialLoading(false);
-      }
-    };
+    const timer = setTimeout(() => {
+      setAnimateIn(true);
+    }, 50);
     
-    checkServerLicense();
-  }, [domain, onActivated]);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleActivation = async () => {
     if (!license.trim()) {
@@ -61,10 +41,8 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
       const isValid = await validateLicense(license, domain);
 
       if (isValid) {
-        // Save license to both browser storage and server file
         await saveLicenseToStorage(license, domain);
         
-        // Also save to server file
         try {
           await fetch('/api/license/store', {
             method: 'POST',
@@ -76,8 +54,6 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
         }
         
         setSuccess(true);
-        
-        // Delay to show success message
         setTimeout(() => {
           onActivated();
         }, 1500);
@@ -92,25 +68,17 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
     }
   };
 
-  const redirectToVerification = () => {
-    window.location.href = `https://license.vebtual.com/verify?domain=${encodeURIComponent(domain)}`;
-  };
-
-  // Return null during initial loading to avoid flickering
-  if (initialLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50 p-4">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-12 w-12 text-white animate-spin" />
-          <p className="mt-4 text-white text-lg">Verifying license...</p>
-        </div>
-      </div>
-    );
-  }
+const redirectToVerification = () => {
+  window.open(
+    `https://license.vebtual.com/verify?domain=${encodeURIComponent(domain)}`,
+    '_blank',            // open in a new tab
+    'noopener,noreferrer'// keep the new page from accessing window.opener
+  );
+};
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50 p-4">
-      <Card className="max-w-md w-full bg-[#0f0f0f] border border-gray-800 shadow-2xl">
+    <div className={`fixed inset-0 flex items-center justify-center bg-black/0 backdrop-blur-sm z-50 p-4 transition-all duration-300 ${animateIn ? 'bg-black/90 backdrop-blur-md' : ''}`}>
+      <Card className={`max-w-md w-full bg-[#0f0f0f] border border-gray-800 shadow-2xl transition-all duration-500 transform ${animateIn ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         <div className="p-6 md:p-8">
           <div className="flex justify-center mb-6">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -172,10 +140,11 @@ const LicenseActivation: React.FC<LicenseActivationProps> = ({ domain, onActivat
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground text-center mt-6">
-            Your license key was provided with your purchase from Envato Market.
-            If you need help, please contact support.
-          </p>
+<p className="text-xs text-muted-foreground text-center mt-6">
+  Already purchased the template? Click <span className="font-semibold">Get&nbsp;License</span> and
+  enter your Envato purchase code to receive your Vebforge license.
+</p>
+
         </div>
       </Card>
     </div>

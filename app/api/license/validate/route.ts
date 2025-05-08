@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           licenseKey: licenseData.license,
           domain
-        })
+        }),
+        // Add a faster timeout to avoid blocking the response
+        signal: AbortSignal.timeout(3000) // 3 second timeout
       });
       
       if (!response.ok) {

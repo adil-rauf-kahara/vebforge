@@ -33,26 +33,32 @@ interface LicenseProviderProps {
 export const LicenseProvider: React.FC<LicenseProviderProps> = ({ children }) => {
   const [isLicenseValid, setIsLicenseValid] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(true);
+  const [showVerification, setShowVerification] = useState<boolean>(false);
   const [licenseKey, setLicenseKey] = useState<string | null>(null);
   const [currentDomain, setCurrentDomain] = useState<string>('');
-  const [verificationAttempt, setVerificationAttempt] = useState<number>(0);
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [lastVerificationTime, setLastVerificationTime] = useState<number>(0);
   
-  // Function to verify the license
+  // Function to verify the license with debouncing
   const verifyLicense = useCallback(async (force = false) => {
     if (typeof window === 'undefined') return false;
     
-    // Prevent excessive checks
-    if (!force && verificationAttempt > 2) {
+    const now = Date.now();
+    const timeSinceLastVerification = now - lastVerificationTime;
+    
+    // Prevent concurrent verifications and rate limit checks
+    if (isVerifying || (!force && timeSinceLastVerification < 10000)) {
       return isLicenseValid;
     }
     
-    setVerificationAttempt(prev => prev + 1);
+    setIsVerifying(true);
+    setLastVerificationTime(now);
     
     try {
-      // First, try the server-side validation
       const domain = getCurrentDomain();
       setCurrentDomain(domain);
       
+      // Try server-side validation
       try {
         const serverResponse = await fetch('/api/license/validate', {
           method: 'POST',
@@ -66,77 +72,44 @@ export const LicenseProvider: React.FC<LicenseProviderProps> = ({ children }) =>
           if (isValid) {
             setIsLicenseValid(true);
             setIsChecking(false);
+            setShowVerification(false);
+            setIsVerifying(false);
             return true;
           }
         }
       } catch (serverError) {
-        console.warn('Server validation failed, falling back to client storage', serverError);
+        console.warn('Server validation failed, falling back to client storage');
       }
       
-      // Check for URL parameter
-      if (!force) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const licenseFromUrl = urlParams.get('license');
-        
-        if (licenseFromUrl) {
-          const isValid = await validateLicense(licenseFromUrl, domain);
-          
-          if (isValid) {
-            await saveLicenseToStorage(licenseFromUrl, domain);
-            
-            // Store on server if possible
-            try {
-              await fetch('/api/license/store', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ license: licenseFromUrl, domain })
-              });
-            } catch (e) {
-              console.warn('Server storage failed:', e);
-            }
-            
-            // Clean URL by removing the license parameter
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            setLicenseKey(licenseFromUrl);
-            setIsLicenseValid(true);
-            setIsChecking(false);
-            return true;
-          }
-        }
-      }
-      
-      // Check client-side storage for existing license
+      // Check client-side storage
       const licenseData = await getLicenseFromStorage();
       
-      if (!licenseData) {
+      if (!licenseData || licenseData.domain !== domain) {
         setIsLicenseValid(false);
         setIsChecking(false);
+        setShowVerification(true);
+        setIsVerifying(false);
         return false;
       }
       
-      // Verify if the saved domain matches current domain
-      if (licenseData.domain !== domain) {
-        setIsLicenseValid(false);
-        setIsChecking(false);
-        return false;
-      }
-      
-      // Validate with the server
       const isValid = await validateLicense(licenseData.license, domain);
       
       setLicenseKey(licenseData.license);
       setIsLicenseValid(isValid);
       setIsChecking(false);
+      setShowVerification(!isValid);
       
       return isValid;
     } catch (error) {
       console.error('License verification error:', error);
       setIsLicenseValid(false);
       setIsChecking(false);
+      setShowVerification(true);
       return false;
+    } finally {
+      setIsVerifying(false);
     }
-  }, [isLicenseValid, verificationAttempt]);
+  }, [isLicenseValid, lastVerificationTime, isVerifying]);
 
   // Public method to refresh license
   const refreshLicense = useCallback(async () => {
@@ -148,20 +121,14 @@ export const LicenseProvider: React.FC<LicenseProviderProps> = ({ children }) =>
     let tamperCheckInterval: NodeJS.Timeout;
     
     if (typeof window !== 'undefined') {
-      // Initial check
-      const isTampered = detectTampering();
-      if (isTampered) {
-        setIsLicenseValid(false);
-      }
-      
-      // Set up periodic checks with variable interval for unpredictability
       const checkForTampering = () => {
-        const randomDelay = 15000 + Math.floor(Math.random() * 30000); // 15-45 seconds
+        const randomDelay = 30000 + Math.floor(Math.random() * 30000); // 30-60 seconds
         
         tamperCheckInterval = setTimeout(() => {
           const isTampered = detectTampering();
           if (isTampered) {
             setIsLicenseValid(false);
+            setShowVerification(true);
           }
           checkForTampering();
         }, randomDelay);
@@ -177,26 +144,21 @@ export const LicenseProvider: React.FC<LicenseProviderProps> = ({ children }) =>
     };
   }, []);
 
-  // Verify license on initial load and set up periodic checks
+  // Initial license verification
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     // Initial verification
     verifyLicense();
     
-    // Set up periodic verification
+    // Set up periodic verification with longer interval
     const verificationInterval = setInterval(() => {
       verifyLicense(true);
-    }, 3600000); // Verify every hour
+    }, 3600000); // Check every hour
     
     return () => {
       clearInterval(verificationInterval);
     };
-  }, [verifyLicense]);
-
-  // Handle license activation
-  const handleLicenseActivated = useCallback(() => {
-    verifyLicense(true);
   }, [verifyLicense]);
 
   return (
@@ -208,13 +170,16 @@ export const LicenseProvider: React.FC<LicenseProviderProps> = ({ children }) =>
         refreshLicense,
       }}
     >
-      {!isChecking && !isLicenseValid ? (
+      {!isChecking && !isLicenseValid && showVerification && (
         <LicenseActivation 
           domain={currentDomain} 
-          onActivated={handleLicenseActivated} 
+          onActivated={() => {
+            verifyLicense(true);
+            setShowVerification(false);
+          }} 
         />
-      ) : null}
-      {(isChecking || isLicenseValid) && children}
+      )}
+      {children}
     </LicenseContext.Provider>
   );
 };

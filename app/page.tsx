@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLicense } from '@/contexts/LicenseContext';
 
 // Dynamically import components with no SSR to prevent tampering
@@ -26,26 +26,27 @@ const INTEGRITY_KEY = process.env.NEXT_PUBLIC_INTEGRITY_KEY || 'vf_integrity_202
 
 export default function Home() {
   const { isLicenseValid, isChecking } = useLicense();
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [shouldRender, setShouldRender] = useState(true);
 
   useEffect(() => {
-    // Additional runtime integrity checks
-    if (!isChecking && !isLicenseValid) {
-      const elements = document.querySelectorAll('[data-vf-protected]');
-      elements.forEach(el => {
-        if (el.innerHTML.length > 0) {
-          // Clear content if license is invalid
-          el.innerHTML = '';
-        }
-      });
+    // Set loaded after initial render
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && !isLicenseValid && !isChecking) {
+      // Only hide content if license check is complete and invalid
+      setShouldRender(false);
+    } else {
+      setShouldRender(true);
     }
-  }, [isLicenseValid, isChecking]);
+  }, [isLicenseValid, isChecking, isLoaded]);
 
-  if (isChecking) {
-    return null;
-  }
-
+  // Always render the container, but conditionally render content
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden" data-vf-protected>
+    <main className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden transition-opacity duration-300" 
+          style={{ opacity: shouldRender ? 1 : 0 }}>
       <div className="max-w-screen-2xl mx-auto">
         <CustomCursor />
         <BackgroundAnimation />
